@@ -27,10 +27,9 @@ function Index() {
       });
 
       if (response.status === 403) {
-        console.log(response.status);
         localStorage.removeItem('token');
         navigate('/login');
-        return; // Stop further execution if response is not ok
+        return;
       }
 
       const result = await response.json();

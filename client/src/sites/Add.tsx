@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 
 function Add() {
@@ -10,11 +10,26 @@ function Add() {
     const navigate = useNavigate();
     const token = localStorage.getItem('token');
 
+    const checkToken = async () => {
+      const response = await fetch('/api/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+      });
+
+      if (response.status == 403) {
+        localStorage.removeItem('token');
+        navigate('/login');
+        return;
+      }
+    };
+
     const handleSubmit = async (event: React.FormEvent) => {
       event.preventDefault();
-      console.log('Form submitted with:', { token, link, alt, width, height });
-      // try {
-      const res = await fetch('/api/add', {
+
+      const response = await fetch('/api/add', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -22,15 +37,19 @@ function Add() {
         body: JSON.stringify({ token, link, alt, width, height }),
       });
 
-      if (!res.ok) {
-        throw new Error(`Server responded with status ${res.status}`);
+      if (response.status == 403) {
+        localStorage.removeItem('token');
+        navigate('/login');
+        return;
       }
 
       navigate('/');
-      // } catch (error) {
-      //   console.error('Error sending message:', error);
-      // }
     };
+
+
+    useEffect(() => {
+      checkToken();
+    });
 
     return (
         <>
