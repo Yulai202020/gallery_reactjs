@@ -79,6 +79,51 @@ app.post('/api/login', (req, res) => {
         }
     });
 });
+
+app.post("/api/remove", async (req, res) => {
+    const { token, id } = req.body;
+    const numericId = Number(id);
+
+    var username;
+
+    try {
+        username = jwt.verify(token, encrypter).username;
+    } catch {
+        res.status(403).json({ message: 'Token is expired' });
+        return;
+    }
+
+    fs.readFile(images, 'utf8', (err, data) => {
+        if (err) {
+            console.error('Error reading the file:', err);
+            return;
+        }
+
+        let jsonData;
+        try {
+            jsonData = JSON.parse(data);
+        } catch (parseErr) {
+            console.error('Error parsing JSON or JSON is not an array:', parseErr);
+            return;
+        }
+
+        if (jsonData[username][numericId] === undefined) {
+            return res.status(404).json({ message: 'Index wasnt found' });
+        }
+
+        jsonData[username].splice(numericId, 1);
+
+        fs.writeFile(images, JSON.stringify(jsonData, null, 2), 'utf8', (writeErr) => {
+            if (writeErr) {
+                console.error('Error writing the file:', writeErr);
+                return;
+            }
+        });
+    });
+
+    return res.status(200).json({ message: 'OK' });
+});
+
 app.post("/api/register", async (req, res) => {
     const { username, password } = req.body;
 

@@ -1,5 +1,4 @@
-import React, { ReactNode } from "react";
-import {Route, BrowserRouter, Routes, Navigate} from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Add from "./sites/Add";
 import Login from "./sites/Login";
@@ -18,8 +17,10 @@ function App() {
             <Route path="/" element={<PrivateRoute><Index/></PrivateRoute>}/>
             <Route path="/add" element={<PrivateRoute><Add/></PrivateRoute>}/>
             <Route path="/logout" element={<PrivateRoute><Logout/></PrivateRoute>}/>
+
             <Route path="/login" element={<Login/>}/>
             <Route path="/register" element={<Register/>}/>
+
             <Route path="*" element={<PageNotFound/>}/>
         </Routes>
       </BrowserRouter>

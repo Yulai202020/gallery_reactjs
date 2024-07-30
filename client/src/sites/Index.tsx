@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.css';
 import '../style.css';
 
+import React from 'react';
+
 type ImageData = {
   link: string;
   alt: string;
@@ -12,10 +14,29 @@ type ImageData = {
 
 function Index() {
   const [BackendData, setBackendData] = useState<ImageData[]>([]);
+  const token = localStorage.getItem('token');
   const navigate = useNavigate();
 
+  const sendDelete = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    const buttonId = Number(event.currentTarget.id)
+
+    try {
+      const response = await fetch('/api/remove', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, "id": buttonId }),
+      });
+
+      // reload
+      window.location.reload();
+    } catch (error) {
+      console.error('Network Error:', error);
+    }
+  };
+
   const sendData = async (): Promise<any> => {
-    const token = localStorage.getItem('token');
 
     try {
       const response = await fetch('/api/images', {
@@ -62,6 +83,7 @@ function Index() {
               className="figure-img img-fluid"
             />
             <figcaption className="figure-caption">{item.alt}</figcaption>
+            <button onClick={sendDelete} id={index.toString()}>delete</button>
           </div>
         ))}
       </div>
