@@ -123,19 +123,12 @@ app.post("/api/register", async (req, res) => {
 // works
 app.post("/api/add", (req, res) => {
     var {token, link, alt, width, height} = req.body;
-    let noErrorOccurred = false;
     var username;
 
     try {
         username = jwt.decode(token).username;
-        noErrorOccurred = true;
     } catch {
         res.status(403).json({ message: 'Token is expired' });
-        return;
-    }
-
-    if (noErrorOccurred && link === undefined && alt === undefined && width === undefined && height === undefined && token !== undefined) {
-        res.status(200).json({ message: 'OK' });
         return;
     }
 

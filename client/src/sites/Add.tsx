@@ -10,22 +10,6 @@ function Add() {
     const navigate = useNavigate();
     const token = localStorage.getItem('token');
 
-    const checkToken = async () => {
-      const response = await fetch('/api/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
-
-      if (response.status == 403) {
-        localStorage.removeItem('token');
-        navigate('/login');
-        return;
-      }
-    };
-
     const handleSubmit = async (event: React.FormEvent) => {
       event.preventDefault();
 
@@ -45,11 +29,6 @@ function Add() {
 
       navigate('/');
     };
-
-
-    useEffect(() => {
-      checkToken();
-    });
 
     return (
         <>

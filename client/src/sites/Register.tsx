@@ -29,6 +29,7 @@ function Register() {
 
     return (
         <>
+        <h3>Register</h3>
         <form onSubmit={handleSubmit}>
             <div className="mb-3">
                 <label htmlFor="username">Email address</label>

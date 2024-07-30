@@ -16,9 +16,9 @@ function App() {
       <BrowserRouter>
         <Routes>
             <Route path="/" element={<PrivateRoute><Index/></PrivateRoute>}/>
-            <Route path="/add" element={<Add/>}/>
+            <Route path="/add" element={<PrivateRoute><Add/></PrivateRoute>}/>
+            <Route path="/logout" element={<PrivateRoute><Logout/></PrivateRoute>}/>
             <Route path="/login" element={<Login/>}/>
-            <Route path="/logout" element={<Logout/>}/>
             <Route path="/register" element={<Register/>}/>
             <Route path="*" element={<PageNotFound/>}/>
         </Routes>
