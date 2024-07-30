@@ -2,7 +2,6 @@ const express = require("express");
 const path = require('path');
 const fs = require('fs');
 const jwt = require("jsonwebtoken");
-const jwtDecode = require('jwt-decode');
 
 const app = express();
 const PORT = 8000;
@@ -80,45 +79,42 @@ app.post('/api/login', (req, res) => {
         }
     });
 });
-
 app.post("/api/register", async (req, res) => {
     const { username, password } = req.body;
-     // Read and update accounts file
-     fs.readFile(accouts, 'utf8')
-     .then(data => {
-         let jsonData = JSON.parse(data);
 
-         if (jsonData[username] !== undefined) {
-             return res.status(403).json({ message: 'User already exists' });
-         }
+    try {
+        // Read accounts file
+        const accountsData = await fs.promises.readFile(accouts, 'utf8');
+        let accounts = JSON.parse(accountsData);
 
-         jsonData[username] = password;
-         return fs.writeFile(accouts, JSON.stringify(jsonData, null, 2), 'utf8');
-     })
-     .then(() => {
-         // Read and update images file
-         return fs.readFile(images, 'utf8');
-     })
-     .then(data => {
-         let jsonData = JSON.parse(data);
+        if (accounts[username] !== undefined) {
+            return res.status(403).json({ message: 'User already exists' });
+        }
 
-         if (jsonData[username] !== undefined) {
-             return res.status(403).json({ message: 'User already exists' });
-         }
+        accounts[username] = password;
+        await fs.promises.writeFile(accouts, JSON.stringify(accounts, null, 2), 'utf8');
 
-         jsonData[username] = [];
-         return fs.writeFile(images, JSON.stringify(jsonData, null, 2), 'utf8');
-     })
-     .then(() => {
-         // Generate JWT token
-         const token = jwt.sign({ username }, encrypter, { expiresIn: '1h' });
-         res.json({ token });
-     })
-     .catch(err => {
-         console.error('Error:', err);
-         res.status(500).json({ message: 'Internal Server Error' });
-     });
+        // Read images file
+        const imagesData = await fs.promises.readFile(images, 'utf8');
+        let images_json = JSON.parse(imagesData);
+
+        if (images_json[username] !== undefined) {
+            return res.status(403).json({ message: 'User already exists' });
+        }
+
+        images_json[username] = [];
+        await fs.promises.writeFile(images_json, JSON.stringify(images_json, null, 2), 'utf8');
+
+        // Generate token
+        const token = jwt.sign({ username }, encrypter, { expiresIn: '1h' });
+        res.status(200).json({ token });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 });
+
 
 // works
 app.post("/api/add", (req, res) => {

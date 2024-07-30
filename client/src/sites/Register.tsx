@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 function Register() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [label, setLebel] = useState('');
     var history = useNavigate();
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -18,7 +19,7 @@ function Register() {
         });
 
         if (response.status == 403) {
-            console.log("tmp")
+            setLebel("User are exist.");
         } else {
             const data = await response.json();
             localStorage.setItem('token', data.token);
@@ -43,6 +44,12 @@ function Register() {
                 <input type="password" className="form-control" id="password" placeholder="Password"
                 onChange={(e) => setPassword(e.target.value)} />
             </div>
+
+            {label && (
+                <div className="mb-3">
+                    <label style={{ color: 'red' }}>{label}</label>
+                </div>
+            )}
 
             <button type="submit" className="btn btn-primary">Submit</button>
         </form>
