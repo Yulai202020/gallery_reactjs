@@ -6,34 +6,30 @@ function Add() {
     const [alt, setAlt] = useState<string>();
     const [height, setHeight] = useState<string>();
     const [width, setWidth] = useState<string>();
-    const [response, setResponse] = useState<string>('');  
+
     const navigate = useNavigate();
+    const token = localStorage.getItem('token');
 
-    const handleSubmit = async () => {
-        try {
-          const res = await fetch('/api/add', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ link, alt, width, height }),
-          });
+    const handleSubmit = async (event: React.FormEvent) => {
+      event.preventDefault();
+      console.log('Form submitted with:', { token, link, alt, width, height });
+      // try {
+      const res = await fetch('/api/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, link, alt, width, height }),
+      });
 
-          console.log('Response status:', res.status); // Debugging log
-          if (!res.ok) {
-            throw new Error(`Server responded with status ${res.status}`);
-          }
+      if (!res.ok) {
+        throw new Error(`Server responded with status ${res.status}`);
+      }
 
-          const data = await res.json();
-          console.log('Response data:', data); // Debugging log
-          setResponse(data.response);
-
-          // Redirect after successful submission
-          navigate('/');
-        } catch (error) {
-          console.error('Error sending message:', error);
-          setResponse('Error sending message');
-        }
+      navigate('/');
+      // } catch (error) {
+      //   console.error('Error sending message:', error);
+      // }
     };
 
     return (

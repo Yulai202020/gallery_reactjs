@@ -1,6 +1,51 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 function Register() {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    var history = useNavigate();
+
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        const response = await fetch('/api/register', {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+        });
+
+        if (response.status == 403) {
+            console.log("tmp")
+        } else {
+            const data = await response.json();
+            localStorage.setItem('token', data.token);
+
+            history("/");
+        }
+    }
+
     return (
         <>
+        <form onSubmit={handleSubmit}>
+            <div className="mb-3">
+                <label htmlFor="username">Email address</label>
+                <input type="text" className="form-control" id="username" placeholder="Enter email"
+                onChange={(e) => setUsername(e.target.value)}  />
+                <small id="emailHelp" className="form-text text-muted">We'll never share your email with anyone else.</small>
+            </div>
+
+            <div className="mb-3">
+                <label htmlFor="password">Password</label>
+                <input type="password" className="form-control" id="password" placeholder="Password"
+                onChange={(e) => setPassword(e.target.value)} />
+            </div>
+
+            <button type="submit" className="btn btn-primary">Submit</button>
+        </form>
+
         <a href="/login">Login</a>
         </>
     );
