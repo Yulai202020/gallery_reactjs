@@ -1,11 +1,14 @@
 const express = require("express");
 const path = require('path');
+const multer = require('multer');
+const cors = require('cors');
 const fs = require('fs');
 const jwt = require("jsonwebtoken");
 
 const app = express();
 const PORT = 8000;
 
+var photos_folder = "./photos/"
 var accouts = "./accouts.json"
 var images = "./images.json"
 var encrypter = "ibutytuiu89r56tcyjhknklihg8fty"
@@ -14,6 +17,29 @@ app.listen(PORT, () => console.log("Server started."));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'build')));
 app.use(express.json());
+
+app.use(cors());
+
+// Set up storage engine for multer
+const storage = multer.diskStorage({
+  destination: './uploads/',
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+
+const upload = multer({ storage });
+
+// Endpoint to handle file upload
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).send('No file uploaded.');
+  }
+  res.status(200).json({
+    fileName: req.file.filename,
+    filePath: `/uploads/${req.file.filename}`,
+  });
+});
 
 // works
 app.post("/api/images", (req, res) => {
