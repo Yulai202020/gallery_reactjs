@@ -20,25 +20,47 @@ app.use(express.json());
 
 app.use(cors());
 
-// Set up storage engine for multer
-const storage = multer.diskStorage({
-  destination: './uploads/',
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
-});
+const verifyToken = (req, res, next) => {
+    const token = req.headers['authorization']?.split(' ')[1];
+  
+    try {
+        const decoded = jwt.verify(token, encrypter);
+        req.username = decoded.username;
+        next();
+    } catch (err) {
+        return res.status(403).json({ message: 'Token is expired' });
+    }
+};
 
-const upload = multer({ storage });
+// not work
+app.post('/api/upload', verifyToken, (req, res) => {
+    if (!req.username) {
+        return res.status(403).json({ message: 'User not authenticated' });
+    }
 
-// Endpoint to handle file upload
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).send('No file uploaded.');
-  }
-  res.status(200).json({
-    fileName: req.file.filename,
-    filePath: `/uploads/${req.file.filename}`,
-  });
+    console.log(req.body)
+
+    if (!req.body || !Buffer.isBuffer(req.body)) {
+        return res.status(400).json({ message: 'No file sent or invalid file data' });
+    }
+
+    const fileBuffer = req.body;
+    const fileName = `${Date.now()}-uploaded-file`; // You might want to derive a filename or use one from headers
+
+    const userFolder = path.join(photos_folder, req.username);
+    if (!fs.existsSync(userFolder)) {
+        fs.mkdirSync(userFolder, { recursive: true });
+    }
+
+    const filePath = path.join(userFolder, fileName);
+
+    fs.writeFile(filePath, fileBuffer, (err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Failed to save file' });
+        }
+
+        res.status(200).json({ message: "OK" });
+    });
 });
 
 // works
@@ -106,6 +128,7 @@ app.post('/api/login', (req, res) => {
     });
 });
 
+// gotta be edit
 app.post("/api/remove", async (req, res) => {
     const { token, id } = req.body;
     const numericId = Number(id);
@@ -150,6 +173,7 @@ app.post("/api/remove", async (req, res) => {
     return res.status(200).json({ message: 'OK' });
 });
 
+// works
 app.post("/api/register", async (req, res) => {
     const { username, password } = req.body;
 
@@ -185,7 +209,6 @@ app.post("/api/register", async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-
 
 // works
 app.post("/api/add", (req, res) => {

@@ -1,11 +1,10 @@
-// FileUpload.tsx
 import React, { useState, ChangeEvent, FormEvent } from 'react';
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const FileUpload: React.FC = () => {
     const [file, setFile] = useState<File | null>(null);
     const [fileName, setFileName] = useState('Choose File');
-    const [uploadedFile, setUploadedFile] = useState<{ fileName: string; filePath: string } | null>(null);
+    const navigate = useNavigate();
 
     const onChange = (e: ChangeEvent<HTMLInputElement>): void => {
         const selectedFile = e.target.files?.[0];
@@ -15,47 +14,51 @@ const FileUpload: React.FC = () => {
         }
     };
 
-    const onSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+    const onSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
         if (!file) return;
 
-        const formData = new FormData();
-        formData.append('file', file);
+        const token = localStorage.getItem('token');
+        console.log(file)
+        fetch('/api/upload', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/octet-stream',
+            },
+            body: file,
+        })
+        .then(response => {
+            if (response.status === 403) {
+                localStorage.removeItem('token');
+                navigate('/login');
+                return Promise.reject('Token expired');
+            }
 
-        try {
-            const res = await axios.post<{ fileName: string; filePath: string }>(
-                'http://localhost:5000/upload',
-                formData,
-                {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
+            return response.json().then(result => {
+                if (response.ok) {
+                    navigate('/');
+                } else {
+                    console.error('File upload failed:', result.message);
                 }
-            );
-
-            const { fileName, filePath } = res.data;
-            setUploadedFile({ fileName, filePath });
-        } catch (err) {
-            console.error(err);
-        }
+            });
+        })
+        .catch(error => {
+            console.error('Error during file upload:', error);
+        });
     };
 
     return (
-    <div>
-        <form onSubmit={onSubmit}>
-            <div>
-                <input type="file" onChange={onChange} />
-                <label htmlFor="file">{fileName}</label>
-            </div>
-            <button type="submit">Upload</button>
-        </form>
-        {uploadedFile && (
-            <div>
-                <h3>{uploadedFile.fileName}</h3>
-                <img src={`http://localhost:5000${uploadedFile.filePath}`} alt={uploadedFile.fileName} />
-            </div>
-        )}
-    </div>
+        <div>
+            <form onSubmit={onSubmit}>
+                <div>
+                    <input type="file" onChange={onChange} />
+                    <label htmlFor="file">{fileName}</label>
+                </div>
+                <button type="submit">Upload</button>
+            </form>
+        </div>
     );
 };
 

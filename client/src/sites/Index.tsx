@@ -89,6 +89,8 @@ function Index() {
       </div>
       <a href="/add">Add</a>
       <br />
+      <a href="/upload">Upload</a>
+      <br />
       <a href="/logout">Logout</a>
     </>
   );
