@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import FileUpload from "./sites/FileUpload";
-import Add from "./sites/Add";
 import Login from "./sites/Login";
 import Index from "./sites/Index";
 import Logout from "./sites/Logout";
@@ -17,7 +16,6 @@ function App() {
         <Routes>
             <Route path="/" element={<PrivateRoute><Index/></PrivateRoute>}/>
             <Route path="/upload" element={<PrivateRoute><FileUpload/></PrivateRoute>}/>
-            <Route path="/add" element={<PrivateRoute><Add/></PrivateRoute>}/>
             <Route path="/logout" element={<PrivateRoute><Logout/></PrivateRoute>}/>
 
             <Route path="/login" element={<Login/>}/>

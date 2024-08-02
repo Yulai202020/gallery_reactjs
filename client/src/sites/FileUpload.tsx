@@ -1,62 +1,52 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import React, { useRef, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const FileUpload: React.FC = () => {
-    const [file, setFile] = useState<File | null>(null);
-    const [fileName, setFileName] = useState('Choose File');
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
 
-    const onChange = (e: ChangeEvent<HTMLInputElement>): void => {
-        const selectedFile = e.target.files?.[0];
-        if (selectedFile) {
-            setFile(selectedFile);
-            setFileName(selectedFile.name);
-        }
-    };
-
-    const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        if (!file) return;
-
         const token = localStorage.getItem('token');
-        console.log(file)
-        fetch('/api/upload', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/octet-stream',
-            },
-            body: file,
-        })
-        .then(response => {
-            if (response.status === 403) {
-                localStorage.removeItem('token');
-                navigate('/login');
-                return Promise.reject('Token expired');
-            }
 
-            return response.json().then(result => {
-                if (response.ok) {
-                    navigate('/');
-                } else {
-                    console.error('File upload failed:', result.message);
-                }
-            });
-        })
-        .catch(error => {
-            console.error('Error during file upload:', error);
+        if (!token) {
+            return;
+        }
+        if (!fileInputRef.current || !fileInputRef.current.files || fileInputRef.current.files.length === 0) {
+            console.error('No file selected');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileInputRef.current.files[0]); // Use append method to add the file itself
+        formData.append('token', token);
+
+        const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
         });
+
+        if (response.status === 403) {
+            localStorage.removeItem('token');
+            navigate('/login');
+            return Promise.reject('Token expired');
+        }
+
+        const responseServer = await response.json();
+        console.log(responseServer); // Handle the response from the server as needed
+        navigate('/');
     };
 
     return (
         <div>
             <form onSubmit={onSubmit}>
                 <div>
-                    <input type="file" onChange={onChange} />
-                    <label htmlFor="file">{fileName}</label>
+                    <input id="file" type="file" ref={fileInputRef} />
                 </div>
-                <button type="submit">Upload</button>
+                <button type="submit">
+                    Upload
+                </button>
             </form>
         </div>
     );

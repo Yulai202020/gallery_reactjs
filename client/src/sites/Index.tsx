@@ -5,15 +5,8 @@ import '../style.css';
 
 import React from 'react';
 
-type ImageData = {
-  link: string;
-  alt: string;
-  width?: number;
-  height?: number;
-};
-
 function Index() {
-  const [BackendData, setBackendData] = useState<ImageData[]>([]);
+  const [BackendData, setBackendData] = useState([]);
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
 
@@ -26,7 +19,7 @@ function Index() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token, "id": buttonId }),
+        body: JSON.stringify({ token, "filename": BackendData[buttonId] }),
       });
 
       // reload
@@ -37,7 +30,6 @@ function Index() {
   };
 
   const sendData = async (): Promise<any> => {
-
     try {
       const response = await fetch('/api/images', {
         method: 'POST',
@@ -74,21 +66,17 @@ function Index() {
     <>
       <div className="gallery">
         {BackendData.map((item, index) => (
-          <div key={index} className="gallery-item">
+          <div className="gallery-item">
+            {item}
             <img
-              src={item.link}
-              alt={item.alt}
-              width={item.width}
-              height={item.height}
+              src={item}
               className="figure-img img-fluid"
             />
-            <figcaption className="figure-caption">{item.alt}</figcaption>
+            <figcaption className="figure-caption">test name</figcaption>
             <button onClick={sendDelete} id={index.toString()}>delete</button>
           </div>
         ))}
       </div>
-      <a href="/add">Add</a>
-      <br />
       <a href="/upload">Upload</a>
       <br />
       <a href="/logout">Logout</a>

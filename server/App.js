@@ -1,66 +1,60 @@
 const express = require("express");
-const path = require('path');
 const multer = require('multer');
-const cors = require('cors');
 const fs = require('fs');
+const path = require('path');
+const bodyParser = require('body-parser');
 const jwt = require("jsonwebtoken");
+
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 const app = express();
 const PORT = 8000;
 
-var photos_folder = "./photos/"
-var accouts = "./accouts.json"
-var images = "./images.json"
+var photos_folder = "photos"
+var accountsFilePath = "./accounts.json"
+var imagesFilePath = "./images.json"
 var encrypter = "ibutytuiu89r56tcyjhknklihg8fty"
 
 app.listen(PORT, () => console.log("Server started."));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'build')));
 app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use(cors());
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
-const verifyToken = (req, res, next) => {
-    const token = req.headers['authorization']?.split(' ')[1];
-  
+// Set up the POST route for file uploads
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    const { token } = req.body;
+    var username;
+
     try {
-        const decoded = jwt.verify(token, encrypter);
-        req.username = decoded.username;
-        next();
-    } catch (err) {
-        return res.status(403).json({ message: 'Token is expired' });
-    }
-};
-
-// not work
-app.post('/api/upload', verifyToken, (req, res) => {
-    if (!req.username) {
-        return res.status(403).json({ message: 'User not authenticated' });
+        username = jwt.verify(token, encrypter).username;
+    } catch {
+        res.status(403).json({ message: 'Token is expired' });
+        return;
     }
 
-    console.log(req.body)
-
-    if (!req.body || !Buffer.isBuffer(req.body)) {
-        return res.status(400).json({ message: 'No file sent or invalid file data' });
+    if (!req.file) {
+        return res.status(400).send('No file uploaded.');
     }
 
-    const fileBuffer = req.body;
-    const fileName = `${Date.now()}-uploaded-file`; // You might want to derive a filename or use one from headers
+    const uploadPath = path.join(__dirname, photos_folder, username);
 
-    const userFolder = path.join(photos_folder, req.username);
-    if (!fs.existsSync(userFolder)) {
-        fs.mkdirSync(userFolder, { recursive: true });
-    }
+    // Ensure the directory exists
+    fs.mkdirSync(uploadPath, { recursive: true });
 
-    const filePath = path.join(userFolder, fileName);
+    const filePath = path.join(uploadPath, req.file.originalname);
 
-    fs.writeFile(filePath, fileBuffer, (err) => {
+    fs.writeFile(filePath, req.file.buffer, (err) => {
         if (err) {
-            return res.status(500).json({ message: 'Failed to save file' });
+            return res.status(500).send('Error saving the file.');
         }
-
-        res.status(200).json({ message: "OK" });
     });
+
+    res.status(200).json({ message: "OK" });
 });
 
 // works
@@ -75,57 +69,54 @@ app.post("/api/images", (req, res) => {
         return;
     }
 
-    fs.readFile(images, 'utf8', (err, data) => {
+    const dirPath = path.join(__dirname, photos_folder, username);
+
+    fs.readdir(dirPath, (err, files) => {
         if (err) {
-            console.error('Error reading the file:', err);
-            return;
+            return res.status(500).send('Failed to list files.');
         }
 
-        let jsonData;
-        try {
-            jsonData = JSON.parse(data);
-        } catch (parseErr) {
-            console.error('Error parsing JSON or JSON is not an array:', parseErr);
-            return;
-        }
+        // for (const i in files) {
+        //     var uploadPath = path.join(__dirname, photos_folder, username);
+        //     uploadPath +=  "/"+files[i];
+        //     files[i] = uploadPath;
+        // }
 
-        res.json(jsonData[username]);
+        console.log(files)
+
+        return res.status(200).json(files);
     });
 });
 
+app.post("/api/images", (req, res) => {
+    var { token, filename } = req.body;
+    var username;
+
+    try {
+        username = jwt.verify(token, encrypter).username;
+    } catch {
+        res.status(403).json({ message: 'Token is expired' });
+        return;
+    }
+
+    const dirPath = path.join(__dirname, photos_folder, username);
+    dirPath+'/'+filename;
+});
+
 // works
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
+    const response = await prisma.user.findFirst({ where: { username:username }});
 
-    fs.readFile(accouts, 'utf8', (err, data) => {
-        if (err) {
-            console.error('Error reading the file:', err);
-            return;
-        }
+    if (response === null) {
+        return res.status(404).json({ message: 'Username not found' });
+    }
+    if (response.password !== password) {
+        return res.status(403).json({ message: 'Invalid password' });
+    }
 
-        let jsonData;
-        try {
-            jsonData = JSON.parse(data);
-        } catch (parseErr) {
-            console.error('Error parsing JSON or JSON is not an array:', parseErr);
-            return;
-        }
-
-        let real_password;
-
-        try {
-            real_password = jsonData[username];
-        } catch (parseErr) {
-            res.status(404).json({ message: 'Username not found' });
-        }
-
-        if (real_password === password) {
-            const token = jwt.sign({ username }, encrypter, { expiresIn: '1h' });
-            res.json({ token });
-        } else {
-            res.status(403).json({ message: 'Invalid password' });
-        }
-    });
+    const token = jwt.sign({ username }, encrypter, { expiresIn: '1h' });
+    return res.status(200).json({ token });
 });
 
 // gotta be edit
@@ -142,7 +133,7 @@ app.post("/api/remove", async (req, res) => {
         return;
     }
 
-    fs.readFile(images, 'utf8', (err, data) => {
+    fs.readFile(imagesFilePath, 'utf8', (err, data) => {
         if (err) {
             console.error('Error reading the file:', err);
             return;
@@ -174,83 +165,18 @@ app.post("/api/remove", async (req, res) => {
 });
 
 // works
+
 app.post("/api/register", async (req, res) => {
     const { username, password } = req.body;
+    const response = await prisma.user.create({ where: { username: username }});
+    if (response !== null) {
+        const user = await prisma.user.create({ data: { username: username,  password: password }});
 
-    try {
-        // Read accounts file
-        const accountsData = await fs.promises.readFile(accouts, 'utf8');
-        let accounts = JSON.parse(accountsData);
-
-        if (accounts[username] !== undefined) {
-            return res.status(403).json({ message: 'User already exists' });
-        }
-
-        accounts[username] = password;
-        await fs.promises.writeFile(accouts, JSON.stringify(accounts, null, 2), 'utf8');
-
-        // Read images file
-        const imagesData = await fs.promises.readFile(images, 'utf8');
-        let images_json = JSON.parse(imagesData);
-
-        if (images_json[username] !== undefined) {
-            return res.status(403).json({ message: 'User already exists' });
-        }
-
-        images_json[username] = [];
-        await fs.promises.writeFile(images_json, JSON.stringify(images_json, null, 2), 'utf8');
-
-        // Generate token
         const token = jwt.sign({ username }, encrypter, { expiresIn: '1h' });
-        res.status(200).json({ token });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Internal server error' });
+        return res.status(200).json({ token });
+    } else {
+        return res.status(403).json({ message: 'User already exists' });
     }
-});
-
-// works
-app.post("/api/add", (req, res) => {
-    var {token, link, alt, width, height} = req.body;
-    var username;
-
-    try {
-        username = jwt.decode(token).username;
-    } catch {
-        res.status(403).json({ message: 'Token is expired' });
-        return;
-    }
-
-    fs.readFile(images, 'utf8', (err, data) => {
-        if (err) {
-            console.error('Error reading the file:', err);
-            return;
-        }
-    
-        // Step 2: Parse the JSON content
-        let jsonData;
-        try {
-            jsonData = JSON.parse(data);
-        } catch (parseErr) {
-            console.error('Error parsing JSON or JSON is not an array:', parseErr);
-            return;
-        }
-    
-        // Step 3: Edit the JSON content
-        // Example: Adding a new element to the array
-        jsonData[username].push({"link": link, "alt": alt, "width": Number(width), "height": Number(height)});
-    
-        // Step 4: Write the updated JSON back to the file
-        fs.writeFile(images, JSON.stringify(jsonData, null, 2), 'utf8', (writeErr) => {
-            if (writeErr) {
-                console.error('Error writing the file:', writeErr);
-                return;
-            }
-        });
-    });
-
-    res.status(200).json({ message: 'OK' });
 });
 
 // works
