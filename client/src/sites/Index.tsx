@@ -67,7 +67,6 @@ function Index() {
       <div className="gallery">
         {BackendData.map((item, index) => (
           <div className="gallery-item">
-            {item}
             <img
               src={item}
               className="figure-img img-fluid"
