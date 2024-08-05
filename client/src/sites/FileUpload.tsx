@@ -4,11 +4,11 @@ import { useNavigate } from 'react-router-dom';
 const FileUpload: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
+    const token = localStorage.getItem('token');
+    const server_path = localStorage.getItem('server_path');
 
     const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-
-        const token = localStorage.getItem('token');
 
         if (!token) {
             return;
@@ -22,7 +22,7 @@ const FileUpload: React.FC = () => {
         formData.append('file', fileInputRef.current.files[0]); // Use append method to add the file itself
         formData.append('token', token);
 
-        const response = await fetch('/api/upload', {
+        const response = await fetch(server_path + '/api/upload', {
             method: 'POST',
             body: formData,
         });

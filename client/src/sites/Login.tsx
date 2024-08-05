@@ -6,13 +6,13 @@ function Login() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [label, setLabel] = useState<string | null>(null);
-
+    const server_path = localStorage.getItem('server_path');
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
     
         try {
-            const response = await fetch('/api/login', {
+            const response = await fetch(server_path + '/api/login', {
                 method: 'post',
                 headers: {
                     'Content-Type': 'application/json',

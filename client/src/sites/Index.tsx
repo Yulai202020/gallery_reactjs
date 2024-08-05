@@ -7,20 +7,23 @@ import React from 'react';
 
 function Index() {
   const [BackendData, setBackendData] = useState([]);
-  const token = localStorage.getItem('token');
   const navigate = useNavigate();
+  const token = localStorage.getItem('token');
+  const server_path = localStorage.getItem('server_path');
 
   const sendDelete = async (event: React.MouseEvent<HTMLButtonElement>) => {
     const buttonId = Number(event.currentTarget.id)
 
     try {
-      const response = await fetch('/api/remove', {
+      const response = await fetch(server_path + '/api/remove', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ token, "filename": BackendData[buttonId] }),
       });
+
+      console.log(response);
 
       // reload
       window.location.reload();
@@ -31,7 +34,7 @@ function Index() {
 
   const sendData = async (): Promise<any> => {
     try {
-      const response = await fetch('/api/images', {
+      const response = await fetch(server_path + '/api/images', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

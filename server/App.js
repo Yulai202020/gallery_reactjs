@@ -1,10 +1,11 @@
 const express = require("express");
 const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
 var cors = require("cors")
+
 const bodyParser = require("body-parser");
+const path = require("path");
 const jwt = require("jsonwebtoken");
+const fs = require("fs");
 
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
@@ -23,15 +24,14 @@ app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 var corsOptions = {
-    origin: "localhost:8080",
-    // optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+    origin: "http://localhost:3000",
 }
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // work
-app.post("/api/upload", upload.single("file"), async (req, res) => {
+app.post("/api/upload", cors(corsOptions), upload.single("file"), async (req, res) => {
     const { token } = req.body;
     var username;
 
@@ -78,7 +78,7 @@ app.post("/api/images", cors(corsOptions), async (req, res) => {
         return;
     }
 
-    const response = await prisma.images.findMany({where:{username:username}})
+    const response = await prisma.images.findMany({ where: { username: username } })
     console.log("Sended images:")
     console.log(response);
 
@@ -94,7 +94,7 @@ app.post("/api/images", cors(corsOptions), async (req, res) => {
 });
 
 // works
-app.post("/api/login", cors(), async (req, res) => {
+app.post("/api/login", cors(corsOptions), async (req, res) => {
     const { username, password } = req.body;
     const response = await prisma.user.findFirst({ where: { username: username }});
 
@@ -113,7 +113,7 @@ app.post("/api/login", cors(), async (req, res) => {
 });
 
 // work
-app.post("/api/remove", async (req, res) => {
+app.post("/api/remove", cors(corsOptions), async (req, res) => {
     const { token, id } = req.body;
     var username;
     numId = Number(id);
@@ -146,7 +146,7 @@ app.post("/api/remove", async (req, res) => {
 });
 
 // works
-app.post("/api/register", async (req, res) => {
+app.post("/api/register", cors(corsOptions), async (req, res) => {
     const { username, password } = req.body;
     const response = await prisma.user.findFirst({ where: { username: username }});
 
@@ -166,7 +166,7 @@ app.post("/api/register", async (req, res) => {
     }
 });
 
-// works
-app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "build", "index.html"));
-});  
+// // works
+// app.get("*", (req, res) => {
+//     res.sendFile(path.join(__dirname, "build", "index.html"));
+// });  

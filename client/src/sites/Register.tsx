@@ -6,11 +6,12 @@ function Register() {
     const [password, setPassword] = useState('');
     const [label, setLebel] = useState('');
     var history = useNavigate();
+    const server_path = localStorage.getItem('server_path');
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        const response = await fetch('/api/register', {
+        const response = await fetch(server_path + '/api/register', {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json',
