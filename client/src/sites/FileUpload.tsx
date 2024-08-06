@@ -1,8 +1,12 @@
-import React, { useRef, FormEvent } from 'react';
+import React, { useState, useRef, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const FileUpload: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    var [subject, setSubject] = useState<string>("");
+    var [alt, setAlt] = useState<string>("");
+
     const navigate = useNavigate();
     const token = localStorage.getItem('token');
     const server_path = localStorage.getItem('server_path');
@@ -21,6 +25,8 @@ const FileUpload: React.FC = () => {
         const formData = new FormData();
         formData.append('file', fileInputRef.current.files[0]); // Use append method to add the file itself
         formData.append('token', token);
+        formData.append('subject', subject);
+        formData.append('alt', alt);
 
         const response = await fetch(server_path + '/api/upload', {
             method: 'POST',
@@ -44,9 +50,20 @@ const FileUpload: React.FC = () => {
                 <div>
                     <input id="file" type="file" ref={fileInputRef} />
                 </div>
-                <button type="submit">
-                    Upload
-                </button>
+                
+                <div className="mb-3">
+                    <label htmlFor="alt">Alt</label>
+                    <input type="text" className="form-control" id="alt" placeholder="text"
+                    onChange={(e) => setAlt(e.target.value)} />
+                </div>
+
+                <div className="mb-3">
+                    <label htmlFor="subject">Subject</label>
+                    <input type="text" className="form-control" id="subject" placeholder="text"
+                    onChange={(e) => setSubject(e.target.value)} />
+                </div>
+                
+                <button type="submit"> Upload </button>
             </form>
         </div>
     );

@@ -1,6 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 var cors = require("cors")
+const cookieParser = require("cookie-parser");
 
 const bodyParser = require("body-parser");
 const path = require("path");
@@ -21,18 +22,19 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "build")));
 app.use(express.json());
 app.use(cors());
+app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 var corsOptions = {
-    origin: "http://localhost:3000",
+    origin: "http://0.0.0.0:3000",
 }
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // work
-app.post("/api/upload", cors(corsOptions), upload.single("file"), async (req, res) => {
-    const { token } = req.body;
+app.post("/api/upload", upload.single("file"), async (req, res) => {
+    const { token, subject, alt } = req.body;
     var username;
 
     try {
@@ -59,15 +61,41 @@ app.post("/api/upload", cors(corsOptions), upload.single("file"), async (req, re
         }
     });
         
-    const response = await prisma.images.create({ data: {username: username, filename: req.file.originalname} });
+    const response = await prisma.images.create({ data: { alt: alt, subject: subject, username: username, filename: req.file.originalname } });
     console.log("Uploaded image:")
     console.log(response)
 
-    res.status(200).json({ message: "OK" });
+    return res.status(200).json({ message: "OK" });
 });
 
 // works
-app.post("/api/images", cors(corsOptions), async (req, res) => {
+app.get("/api/image/:id", async (req, res) => {
+    // get username
+    const token = req.cookies.token;
+    const id = Number(req.params.id);
+    var username;
+    
+    try {
+        username = jwt.verify(token, encrypter).username;
+    } catch {
+        res.status(403).json({ message: "Token is expired" });
+        return;
+    }
+
+    const response = await prisma.images.findFirst({ where: { id: id, username: username } })
+
+    const filePath = path.join(__dirname, 'photos', username, response.filename);
+    res.sendFile(filePath, (err) => {
+        if (err) {
+            console.error('Error sending file:', err);
+            res.status(500).send('Error sending file');
+        }
+    });
+
+    return res.status(200).json({ message: "OK" });
+});
+
+app.post("/api/images", async (req, res) => {
     var { token } = req.body;
     var username;
     
@@ -82,19 +110,11 @@ app.post("/api/images", cors(corsOptions), async (req, res) => {
     console.log("Sended images:")
     console.log(response);
 
-    const dirPath = path.join(__dirname, photos_folder, username);
-
-    fs.readdir(dirPath, (err, files) => {
-        if (err) {
-            return res.status(500).send("Failed to list files.");
-        }
-
-        return res.status(200).json(files);
-    });
+    return res.status(200).json(response);
 });
 
 // works
-app.post("/api/login", cors(corsOptions), async (req, res) => {
+app.post("/api/login", async (req, res) => {
     const { username, password } = req.body;
     const response = await prisma.user.findFirst({ where: { username: username }});
 
@@ -113,10 +133,10 @@ app.post("/api/login", cors(corsOptions), async (req, res) => {
 });
 
 // work
-app.post("/api/remove", cors(corsOptions), async (req, res) => {
+app.post("/api/remove", async (req, res) => {
     const { token, id } = req.body;
     var username;
-    numId = Number(id);
+    var numId = Number(id);
 
     try {
         username = jwt.verify(token, encrypter).username;
@@ -126,6 +146,7 @@ app.post("/api/remove", cors(corsOptions), async (req, res) => {
     }
 
     const response = await prisma.images.findFirst({ where: { id: numId, username: username} });
+
     console.log("Removed image:");
     console.log(response)
 
@@ -142,11 +163,13 @@ app.post("/api/remove", cors(corsOptions), async (req, res) => {
         return res.status(404).send({ message: "File not found." });
     }
 
+    await prisma.images.delete({ where: { id: numId, username: username} });
+
     return res.status(200).json({ message: "OK" });
 });
 
 // works
-app.post("/api/register", cors(corsOptions), async (req, res) => {
+app.post("/api/register", async (req, res) => {
     const { username, password } = req.body;
     const response = await prisma.user.findFirst({ where: { username: username }});
 
@@ -165,8 +188,3 @@ app.post("/api/register", cors(corsOptions), async (req, res) => {
         return res.status(403).json({ message: "User already exists" });
     }
 });
-
-// // works
-// app.get("*", (req, res) => {
-//     res.sendFile(path.join(__dirname, "build", "index.html"));
-// });  

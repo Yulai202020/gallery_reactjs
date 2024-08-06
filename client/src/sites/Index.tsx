@@ -2,14 +2,22 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.css';
 import '../style.css';
+import Cookies from 'js-cookie';
 
 import React from 'react';
 
 function Index() {
-  const [BackendData, setBackendData] = useState([]);
+  const [BackendData, setBackendData] = useState<any[]>([]);
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
   const server_path = localStorage.getItem('server_path');
+
+  useEffect(() => {
+    if (token) {
+      Cookies.set('token', token, { expires: 1 / 24 });
+    }
+  }, [token]);
+
 
   const sendDelete = async (event: React.MouseEvent<HTMLButtonElement>) => {
     const buttonId = Number(event.currentTarget.id)
@@ -20,10 +28,8 @@ function Index() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token, "filename": BackendData[buttonId] }),
+        body: JSON.stringify({ token, "id": buttonId }),
       });
-
-      console.log(response);
 
       // reload
       window.location.reload();
@@ -32,7 +38,7 @@ function Index() {
     }
   };
 
-  const sendData = async (): Promise<any> => {
+  const sendData = async (): Promise<any[]> => {
     try {
       const response = await fetch(server_path + '/api/images', {
         method: 'POST',
@@ -45,14 +51,14 @@ function Index() {
       if (response.status === 403) {
         localStorage.removeItem('token');
         navigate('/login');
-        return;
+        return [];
       }
 
       const result = await response.json();
       return result;
     } catch (error) {
       console.error('Fetch error:', error);
-      return error;
+      return [];
     }
   };
 
@@ -69,13 +75,14 @@ function Index() {
     <>
       <div className="gallery">
         {BackendData.map((item, index) => (
-          <div className="gallery-item">
+          <div className="gallery-item" key={index}>
             <img
-              src={item}
+              src={server_path+"/api/image/"+item["id"]}
+              alt={item["alt"]}
               className="figure-img img-fluid"
             />
-            <figcaption className="figure-caption">test name</figcaption>
-            <button onClick={sendDelete} id={index.toString()}>delete</button>
+            <figcaption className="figure-caption">{item["subject"]}</figcaption>
+            <button onClick={sendDelete} id={item["id"]}>delete</button>
           </div>
         ))}
       </div>

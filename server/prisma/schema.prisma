@@ -14,6 +14,8 @@ model User {
 
 model Images {
   id Int @id @default(autoincrement())
-  username String
+  alt String
+  subject String
   filename String
+  username String
 }
