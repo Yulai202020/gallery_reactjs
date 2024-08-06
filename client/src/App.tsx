@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Cookies from 'js-cookie';
 
 import FileUpload from "./sites/FileUpload";
 import Login from "./sites/Login";
@@ -32,7 +33,7 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute = ({ children }: PrivateRouteProps): JSX.Element => {
-  const isAuthenticated = !!localStorage.getItem('token');
+  const isAuthenticated = !!Cookies.get("token");
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 

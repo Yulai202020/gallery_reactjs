@@ -1,34 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Cookies from 'js-cookie';
 import 'bootstrap/dist/css/bootstrap.css';
 import '../style.css';
-import Cookies from 'js-cookie';
 
 import React from 'react';
 
 function Index() {
   const [BackendData, setBackendData] = useState<any[]>([]);
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
   const server_path = localStorage.getItem('server_path');
-
-  useEffect(() => {
-    if (token) {
-      Cookies.set('token', token, { expires: 1 / 24 });
-    }
-  }, [token]);
-
 
   const sendDelete = async (event: React.MouseEvent<HTMLButtonElement>) => {
     const buttonId = Number(event.currentTarget.id)
 
     try {
       const response = await fetch(server_path + '/api/remove', {
-        method: 'POST',
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token, "id": buttonId }),
+        credentials: 'include',
+        body: JSON.stringify({ "id": buttonId }),
       });
 
       // reload
@@ -41,15 +34,15 @@ function Index() {
   const sendData = async (): Promise<any[]> => {
     try {
       const response = await fetch(server_path + '/api/images', {
-        method: 'POST',
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token }),
+        credentials: 'include',
       });
 
       if (response.status === 403) {
-        localStorage.removeItem('token');
+        Cookies.remove("token");
         navigate('/login');
         return [];
       }

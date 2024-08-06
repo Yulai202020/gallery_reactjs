@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Cookies from 'js-cookie';
 
 function Register() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [label, setLebel] = useState('');
-    var history = useNavigate();
+    var navigate = useNavigate();
     const server_path = localStorage.getItem('server_path');
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -19,13 +20,12 @@ function Register() {
             body: JSON.stringify({ username, password }),
         });
 
-        if (response.status == 403) {
+        if (response.status === 403) {
             setLebel("User are exist.");
         } else {
             const data = await response.json();
-            localStorage.setItem('token', data.token);
-
-            history("/");
+            Cookies.set('token', data.token, { expires: 1 / 24 });
+            navigate("/");
         }
     }
 

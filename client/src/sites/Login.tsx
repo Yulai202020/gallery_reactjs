@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import Cookies from 'js-cookie';
 
 function Login() {
-    var redirect = useNavigate();
+    var navigate = useNavigate();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [label, setLabel] = useState<string | null>(null);
@@ -19,16 +20,19 @@ function Login() {
                 },
                 body: JSON.stringify({ username, password }),
             });
+
+
+            console.log(response)
     
-            if (response.status == 403 || response.status == 404) {
+            if (response.status === 403 || response.status === 404) {
                 setLabel("Password or Username is incorrect.");
             } else {
                 // Save the token in local storage
                 const data = await response.json();
-                localStorage.setItem('token', data.token);
+                Cookies.set('token', data.token, { expires: 1 / 24 });
 
                 // Redirect to a protected route
-                redirect('/');
+                navigate('/');
             }
         } catch (error) {
             console.error('Login failed:', error);

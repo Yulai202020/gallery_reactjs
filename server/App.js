@@ -17,24 +17,28 @@ const PORT = 8000;
 var photos_folder = "photos"
 var encrypter = "ibutytuiu89r56tcyjhknklihg8fty"
 
+var corsOptions = {
+    origin: "http://localhost:3000",
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}
+
 app.listen(PORT, () => console.log("Server started."));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "build")));
 app.use(express.json());
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
-
-var corsOptions = {
-    origin: "http://0.0.0.0:3000",
-}
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // work
 app.post("/api/upload", upload.single("file"), async (req, res) => {
-    const { token, subject, alt } = req.body;
+    const { subject, alt } = req.body;
+    const token = req.cookies.token;
     var username;
 
     try {
@@ -95,10 +99,10 @@ app.get("/api/image/:id", async (req, res) => {
     return res.status(200).json({ message: "OK" });
 });
 
-app.post("/api/images", async (req, res) => {
-    var { token } = req.body;
+app.get("/api/images", async (req, res) => {
+    const token = req.cookies.token;
     var username;
-    
+
     try {
         username = jwt.verify(token, encrypter).username;
     } catch {
@@ -133,8 +137,10 @@ app.post("/api/login", async (req, res) => {
 });
 
 // work
-app.post("/api/remove", async (req, res) => {
-    const { token, id } = req.body;
+app.get("/api/remove", async (req, res) => {
+    const { id } = req.body;
+    const token = req.cookies.token;
+
     var username;
     var numId = Number(id);
 
