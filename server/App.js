@@ -18,7 +18,7 @@ var photos_folder = "photos"
 var encrypter = "ibutytuiu89r56tcyjhknklihg8fty"
 
 var corsOptions = {
-    origin: "http://localhost:3000",
+    origin: "*",
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -34,6 +34,24 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+
+app.post("/api/removeall", upload.single("file"), async (req, res) => {
+    const token = req.cookies.token;
+    var username;
+
+    try {
+        username = jwt.verify(token, encrypter).username;
+    } catch {
+        res.status(403).json({ message: "Token is expired" });
+        return;
+    }
+
+    await prisma.images.deleteMany({ where: { username: username } })
+    console.log("Deleted all images from user:")
+    console.log(username);
+
+    return res.status(200).json({ message: "OK" });
+});
 
 // work
 app.post("/api/upload", upload.single("file"), async (req, res) => {
@@ -59,6 +77,11 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
 
     const filePath = path.join(uploadPath, req.file.originalname);
 
+    // if file exists
+    if (fs.existsSync(filePath)) {
+        return res.status(403).json({ message: "File is already exists." })
+    }
+
     fs.writeFile(filePath, req.file.buffer, (err) => {
         if (err) {
             return res.status(500).send("Error saving the file.");
@@ -67,9 +90,9 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
         
     const response = await prisma.images.create({ data: { alt: alt, subject: subject, username: username, filename: req.file.originalname } });
     console.log("Uploaded image:")
-    console.log(response)
+    console.log(response.id)
 
-    return res.status(200).json({ message: "OK" });
+    return res.status(200).json({ id: response.id, message: "OK" });
 });
 
 // works
