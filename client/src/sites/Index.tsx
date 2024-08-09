@@ -16,13 +16,16 @@ function Index() {
 
     try {
       const response = await fetch(server_path + '/api/remove', {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
         body: JSON.stringify({ "id": buttonId }),
       });
+
+      const data = await response.json();
+      console.log(data);
 
       // reload
       window.location.reload();

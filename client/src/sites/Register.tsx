@@ -13,7 +13,7 @@ function Register() {
         event.preventDefault();
 
         const response = await fetch(server_path + '/api/register', {
-            method: 'post',
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },

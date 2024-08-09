@@ -14,24 +14,19 @@ function Login() {
     
         try {
             const response = await fetch(server_path + '/api/login', {
-                method: 'post',
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ username, password }),
             });
 
-
-            console.log(response)
-    
             if (response.status === 403 || response.status === 404) {
                 setLabel("Password or Username is incorrect.");
             } else {
-                // Save the token in local storage
                 const data = await response.json();
                 Cookies.set('token', data.token, { expires: 1 / 24 });
 
-                // Redirect to a protected route
                 navigate('/');
             }
         } catch (error) {

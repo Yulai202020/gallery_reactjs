@@ -1,49 +1,55 @@
+// imports
 const express = require("express");
 const multer = require("multer");
 var cors = require("cors")
 const cookieParser = require("cookie-parser");
 
-const bodyParser = require("body-parser");
 const path = require("path");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 
+// include prisma
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+// init app
 const app = express();
 const PORT = 8000;
 
+// init needed vars
 var photos_folder = "photos"
 var encrypter = "ibutytuiu89r56tcyjhknklihg8fty"
 
+// init cors optoin
 var corsOptions = {
-    origin: "*",
+    origin: "http://localhost:3000",
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }
 
+// start server
 app.listen(PORT, () => console.log("Server started."));
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "build")));
-app.use(express.json());
+
+// apply extensions to app
 app.use(cors(corsOptions));
 app.use(cookieParser());
-app.use(bodyParser.urlencoded({ extended: true }));
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// add storage for upload
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-app.post("/api/removeall", upload.single("file"), async (req, res) => {
+app.get("/api/removeall", async (req, res) => {
     const token = req.cookies.token;
     var username;
 
     try {
         username = jwt.verify(token, encrypter).username;
     } catch {
-        res.status(403).json({ message: "Token is expired" });
-        return;
+        return res.status(403).json({ message: "Token is expired" });
     }
 
     await prisma.images.deleteMany({ where: { username: username } })
@@ -53,7 +59,6 @@ app.post("/api/removeall", upload.single("file"), async (req, res) => {
     return res.status(200).json({ message: "OK" });
 });
 
-// work
 app.post("/api/upload", upload.single("file"), async (req, res) => {
     const { subject, alt } = req.body;
     const token = req.cookies.token;
@@ -62,12 +67,11 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
     try {
         username = jwt.verify(token, encrypter).username;
     } catch {
-        res.status(403).json({ message: "Token is expired" });
-        return;
+        return res.status(403).json({ message: "Token is expired" });
     }
 
     if (!req.file) {
-        return res.status(400).send("No file uploaded.");
+        return res.status(404).send("No file uploaded.");
     }
 
     const uploadPath = path.join(__dirname, photos_folder, username);
@@ -75,27 +79,42 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
     // Ensure the directory exists
     fs.mkdirSync(uploadPath, { recursive: true });
 
-    const filePath = path.join(uploadPath, req.file.originalname);
+    // get time and make new filename
+    const filename = req.file.originalname;
+    const now = new Date();
+
+    const datePart = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const timePart = now.toTimeString().split(' ')[0] + '.' + now.getMilliseconds().toString().padStart(3, '0'); // HH:MM:SS.mmm
+
+    const timestamp = `${datePart}-${timePart}`;
+
+    const ext = path.extname(filename);
+    const basename = path.basename(filename, ext);
+
+    // Generate the new filename
+    const newFilename = `${basename}-${timestamp}${ext}`;
+
+    // filepath
+    const filePath = path.join(uploadPath, newFilename);
 
     // if file exists
     if (fs.existsSync(filePath)) {
-        return res.status(403).json({ message: "File is already exists." })
+        return res.status(402).json({ message: "File is already exists." })
     }
 
-    fs.writeFile(filePath, req.file.buffer, (err) => {
-        if (err) {
-            return res.status(500).send("Error saving the file.");
-        }
-    });
-        
-    const response = await prisma.images.create({ data: { alt: alt, subject: subject, username: username, filename: req.file.originalname } });
+    try {
+        await fs.promises.writeFile(filePath, req.file.buffer);
+    } catch (err) {
+        return res.status(500).json({ message: "Error saving the file." });
+    }
+
+    const response = await prisma.images.create({ data: { alt: alt, subject: subject, username: username, filename: newFilename } });
     console.log("Uploaded image:")
     console.log(response.id)
 
     return res.status(200).json({ id: response.id, message: "OK" });
 });
 
-// works
 app.get("/api/image/:id", async (req, res) => {
     // get username
     const token = req.cookies.token;
@@ -105,21 +124,18 @@ app.get("/api/image/:id", async (req, res) => {
     try {
         username = jwt.verify(token, encrypter).username;
     } catch {
-        res.status(403).json({ message: "Token is expired" });
-        return;
+        return res.status(403).json({ message: "Token is expired" });
     }
 
     const response = await prisma.images.findFirst({ where: { id: id, username: username } })
 
     const filePath = path.join(__dirname, 'photos', username, response.filename);
-    res.sendFile(filePath, (err) => {
+    return res.status(200).sendFile(filePath, (err) => {
         if (err) {
             console.error('Error sending file:', err);
-            res.status(500).send('Error sending file');
+            return res.status(500).send({ message: 'Error sending file' });
         }
     });
-
-    return res.status(200).json({ message: "OK" });
 });
 
 app.get("/api/images", async (req, res) => {
@@ -129,8 +145,7 @@ app.get("/api/images", async (req, res) => {
     try {
         username = jwt.verify(token, encrypter).username;
     } catch {
-        res.status(403).json({ message: "Token is expired" });
-        return;
+        return res.status(403).json({ message: "Token is expired" });
     }
 
     const response = await prisma.images.findMany({ where: { username: username } })
@@ -140,7 +155,6 @@ app.get("/api/images", async (req, res) => {
     return res.status(200).json(response);
 });
 
-// works
 app.post("/api/login", async (req, res) => {
     const { username, password } = req.body;
     const response = await prisma.user.findFirst({ where: { username: username }});
@@ -159,8 +173,7 @@ app.post("/api/login", async (req, res) => {
     return res.status(200).json({ token });
 });
 
-// work
-app.get("/api/remove", async (req, res) => {
+app.post("/api/remove", async (req, res) => {
     const { id } = req.body;
     const token = req.cookies.token;
 
@@ -170,8 +183,7 @@ app.get("/api/remove", async (req, res) => {
     try {
         username = jwt.verify(token, encrypter).username;
     } catch {
-        res.status(403).json({ message: "Token is expired" });
-        return;
+        return res.status(403).json({ message: "Token is expired" });
     }
 
     const response = await prisma.images.findFirst({ where: { id: numId, username: username} });
@@ -197,7 +209,6 @@ app.get("/api/remove", async (req, res) => {
     return res.status(200).json({ message: "OK" });
 });
 
-// works
 app.post("/api/register", async (req, res) => {
     const { username, password } = req.body;
     const response = await prisma.user.findFirst({ where: { username: username }});
