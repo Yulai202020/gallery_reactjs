@@ -142,6 +142,8 @@ app.get("/api/images", async (req, res) => {
     const token = req.cookies.token;
     var username;
 
+    console.log(token);
+
     try {
         username = jwt.verify(token, encrypter).username;
     } catch {

@@ -1,13 +1,12 @@
 const fs = require('fs');
 const vars = require("./vars.js");
+const Cookie = require("js-cookie");
 
 const filePath = 'file.txt';
 const token = vars.get_token();
 
 test('POST API Tests', async () => {
-    const expireDate = new Date();
-    expireDate.setTime(expireDate.getTime() + (60 * 60 * 1000)); // 1 hour in milliseconds
-    const expires = `expires=${expireDate.toUTCString()}`;
+    Cookie.set("token", token, { expires: 1/24 });
 
     fs.readFile(filePath, (err, data) => {
         if (err) {
