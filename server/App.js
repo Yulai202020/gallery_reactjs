@@ -1,11 +1,11 @@
 // imports
+const cookieParser = require("cookie-parser");
 const express = require("express");
 const multer = require("multer");
 var cors = require("cors")
-const cookieParser = require("cookie-parser");
 
-const path = require("path");
 const jwt = require("jsonwebtoken");
+const path = require("path");
 const fs = require("fs");
 
 // include prisma

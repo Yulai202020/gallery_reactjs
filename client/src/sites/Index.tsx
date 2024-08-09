@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import 'bootstrap/dist/css/bootstrap.css';
 import '../style.css';
-
 import React from 'react';
 
 function Index() {
@@ -12,23 +11,23 @@ function Index() {
   const server_path = localStorage.getItem('server_path');
 
   const sendDelete = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    const buttonId = Number(event.currentTarget.id)
+    const buttonId = Number(event.currentTarget.id);
 
     try {
       const response = await fetch(server_path + '/api/remove', {
-        method: 'POST',
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ "id": buttonId }),
+        body: JSON.stringify({ id: buttonId }),
       });
 
       const data = await response.json();
       console.log(data);
 
-      // reload
-      window.location.reload();
+      // Update state without reloading the page
+      setBackendData(prevData => prevData.filter(item => item.id !== buttonId));
     } catch (error) {
       console.error('Network Error:', error);
     }
@@ -65,7 +64,7 @@ function Index() {
     };
 
     fetchData();
-  }, [navigate]);
+  }, []); // Remove navigate from dependency array
 
   return (
     <>
@@ -73,12 +72,12 @@ function Index() {
         {BackendData.map((item, index) => (
           <div className="gallery-item" key={index}>
             <img
-              src={server_path+"/api/image/"+item["id"]}
-              alt={item["alt"]}
+              src={`${server_path}/api/image/${item.id}`}
+              alt={item.alt}
               className="figure-img img-fluid"
             />
-            <figcaption className="figure-caption">{item["subject"]}</figcaption>
-            <button onClick={sendDelete} id={item["id"]}>delete</button>
+            <figcaption className="figure-caption">{item.subject}</figcaption>
+            <button onClick={sendDelete} id={String(item.id)}>delete</button>
           </div>
         ))}
       </div>
